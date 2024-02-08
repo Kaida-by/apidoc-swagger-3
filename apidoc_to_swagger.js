@@ -5,7 +5,7 @@ const GenerateSchema = require('generate-schema')
 
 
 var swagger = {
-    openapi: "3.0.0",
+    swagger: "3.0",
     info: {},
     paths: {}
 };
@@ -25,7 +25,7 @@ function removeTags(text) {
     return text ? text.replace(tagsRegex, "") : text;
 }
 
-function addInfo(projectJson) {  // cf. https://swagger.io/specification/#info-object
+function addInfo(projectJson) {
     var info = {};
     info["title"] = projectJson.title || projectJson.name;
     info["version"] = projectJson.version;
@@ -40,7 +40,7 @@ function addInfo(projectJson) {  // cf. https://swagger.io/specification/#info-o
  * @param apidocJson
  * @returns {{}}
  */
-function extractPaths(apidocJson) {  // cf. https://swagger.io/specification/#paths-object
+function extractPaths(apidocJson) {
     var apiPaths = groupByUrl(apidocJson);
     var paths = {};
     for (var i = 0; i < apiPaths.length; i++) {
@@ -55,6 +55,7 @@ function extractPaths(apidocJson) {  // cf. https://swagger.io/specification/#pa
             var key = matches[j].substr(1);
             url = url.replace(matches[j], "{" + key + "}");
             pathKeys.push(key);
+
         }
 
         for (let j = 0; j < verbs.length; j++) {
@@ -71,27 +72,45 @@ function extractPaths(apidocJson) {  // cf. https://swagger.io/specification/#pa
 
 function mapHeaderItem(i) {
     return {
+        type: 'string',
         in: 'header',
         name: i.field,
         description: removeTags(i.description),
         required: !i.optional,
-        schema: {
-            type: 'string',
-            default: i.defaultValue
-        }
+        default: i.defaultValue
     }
 }
-
 function mapQueryItem(i) {
     return {
+        type: 'string',
         in: 'query',
         name: i.field,
         description: removeTags(i.description),
         required: !i.optional,
+        default: i.defaultValue
+    }
+}
+
+function mapPathItem(i) {
+    return {
+        name: i.field,
+        in: 'path',
+        description: removeTags(i.description),
+        required: true,
         schema: {
-            type: 'string',
+            type: i.type.toLowerCase(),
             default: i.defaultValue
         }
+    };
+}
+
+const defaultBodyParameter = {
+    // name: 'root',
+    // in: 'body',
+    schema: {
+        properties: {},
+        type: 'object',
+        required: []
     }
 }
 
@@ -105,9 +124,9 @@ function mapQueryItem(i) {
  */
 
 /**
- * 
- * @param {ApidocParameter[]} apiDocParams 
- * @param {*} parameter 
+ *
+ * @param {ApidocParameter[]} apiDocParams
+ * @param {*} parameter
  */
 function transferApidocParamsToSwaggerBody(apiDocParams, parameterInBody) {
 
@@ -169,9 +188,10 @@ function transferApidocParamsToSwaggerBody(apiDocParams, parameterInBody) {
     return parameterInBody
 }
 function generateProps(verb) {
+    // console.log('verb', verb);
+
     const pathItemObject = {}
     const parameters = generateParameters(verb)
-    const body = generateBody(verb)
     const responses = generateResponses(verb)
     pathItemObject[verb.type] = {
         tags: [verb.group],
@@ -184,35 +204,11 @@ function generateProps(verb) {
             "application/json"
         ],
         parameters,
-        requestBody: {
-            content: {
-                'application/json': body
-            }
-        },
         responses
     }
 
     return pathItemObject
-}
 
-function generateBody(verb) {
-    const mixedBody = []
-
-    if (verb && verb.parameter && verb.parameter.fields) {
-        const Parameter = verb.parameter.fields.Parameter || []
-        const _body = verb.parameter.fields.Body || []
-        mixedBody.push(..._body)
-        if (!(verb.type === 'get')) {
-            mixedBody.push(...Parameter)
-        }
-    }
-
-    let body = {}
-    if (verb.type === 'post' || verb.type === 'put') {
-        body = generateRequestBody(verb, mixedBody)
-    }
-
-    return body
 }
 
 function generateParameters(verb) {
@@ -221,6 +217,7 @@ function generateParameters(verb) {
     const header = verb && verb.header && verb.header.fields.Header || []
 
     if (verb && verb.parameter && verb.parameter.fields) {
+
         const Parameter = verb.parameter.fields.Parameter || []
         const _query = verb.parameter.fields.Query || []
         const _body = verb.parameter.fields.Body || []
@@ -236,13 +233,17 @@ function generateParameters(verb) {
     const parameters = []
     parameters.push(...mixedQuery.map(mapQueryItem))
     parameters.push(...header.map(mapHeaderItem))
-    parameters.push(...(verb.query || []).map(mapQueryItem))
+    parameters.push(generateRequestBody(verb, mixedBody))
+    // console.log('parameters', parameters);
+
+    const pathParams = verb && verb.parameter && verb.parameter.fields && verb.parameter.fields.Path || [];
+    parameters.push(...pathParams.map(mapPathItem));
 
     return parameters
 }
-
 function generateRequestBody(verb, mixedBody) {
     const bodyParameter = {
+        in: 'body',
         schema: {
             properties: {},
             type: 'object',
@@ -289,6 +290,8 @@ function generateResponses(verb) {
     return responses
 }
 
+
+
 function mountResponseSpecSchema(verb, responses) {
     // if (verb.success && verb.success['fields'] && verb.success['fields']['Success 200']) {
     if (_.get(verb, 'success.fields.Success 200')) {
@@ -299,18 +302,9 @@ function mountResponseSpecSchema(verb, responses) {
 
 function safeParseJson(content) {
     // such as  'HTTP/1.1 200 OK\n' +  '{\n' + ...
-
-    let startingIndex = 0;
-    for (let i = 0; i < content.length; i++) {
-        const character = content[i];
-        if (character === '{' || character === '[') {
-            startingIndex = i;
-            break;
-        }
-    }
-
-    const mayCodeString = content.slice(0, startingIndex)
-    const mayContentString = content.slice(startingIndex)
+    const leftCurlyBraceIndex = content.indexOf('{')
+    const mayCodeString = content.slice(0, leftCurlyBraceIndex)
+    const mayContentString = content.slice(leftCurlyBraceIndex)
 
     const mayCodeSplit = mayCodeString.trim().split(' ')
     const code = mayCodeSplit.length === 3 ? parseInt(mayCodeSplit[1]) : 200
@@ -319,7 +313,7 @@ function safeParseJson(content) {
     try {
         json = JSON.parse(mayContentString)
     } catch (error) {
-        console.warn('parse %o with error', mayContentString, error)
+        console.warn('parse error', error)
     }
 
     return {
@@ -327,6 +321,7 @@ function safeParseJson(content) {
         json
     }
 }
+
 
 function createNestedName(field, defaultObjectName) {
     let propertyName = field;

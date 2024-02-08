@@ -1,69 +1,67 @@
-const fs = require('fs')
-const path = require('path')
-const apidoc = require('apidoc-core')
-const winston = require('winston');
+
+var app = {
+    options: {}
+}
+var apidoc = require('apidoc-core')
+var winston = require('winston');
 
 const apidoc_to_swagger = require('./apidoc_to_swagger');
-
 apidoc.setGeneratorInfos({ name: 'name', time: new Date(), version: '0.0.1', url: 'xxx url' })
 
 
-function generateLog(options) {
-    return winston.createLogger({
+function generateLog() {
+    var log = winston.createLogger({
         transports: [
             new (winston.transports.Console)({
-                level: options.verbose ? 'verbose' : 'info',
+                level: app.options.verbose ? 'verbose' : 'info',
                 silent: false,
                 prettyPrint: true,
-                colorize: options.color,
+                colorize: app.options.color,
                 timestamp: false
             }),
         ]
     })
+    app.options.log = log
+    return log
 }
 
 function main(options) {
-    options.verbose && console.log('options', options);
-    const log = generateLog(options)
+
+    app.options = options
+    app.options.verbose && console.log('options', app.options);
+    generateLog()
     const { src, dest, verbose } = options
-    apidoc.setLogger(log)
+    apidoc.setLogger(app.options.log)
 
-    var api = apidoc.parse({ ...options, log: log })
+    var api = apidoc.parse({ ...app.options, log: app.options.log })
 
-    if (!api) {
-        console.log('No input data found, check your include/exclude filters');
-        return
+    if (app.options.parse !== true) {
+        var apidocData = JSON.parse(api.data);
+        var projectData = JSON.parse(api.project);
+
+        const swagger = apidoc_to_swagger.toSwagger(apidocData, projectData)
+
+        api["swaggerData"] = JSON.stringify(swagger);
+        createOutputFile(api, app.options.log)
     }
-
-    var apidocData = JSON.parse(api.data);
-    var projectData = JSON.parse(api.project);
-
-    // Replicate underscoreToSpace handlebar filter from https://github.com/apidoc/apidoc/blob/0.50.5/template/src/hb_helpers.js#L93
-    for (let article of apidocData) {
-        if (article.name)
-            article.name = article.name.replace(/(_+)/g, ' ');
-    }
-
-    const swagger = apidoc_to_swagger.toSwagger(apidocData, projectData)
-
-    api["swaggerData"] = JSON.stringify(swagger, null, 4);
-    createOutputFile(api.swaggerData, log, options)
-
-    return swagger;
 }
 
-function createOutputFile(swaggerData, log, options) {
-    if (options.simulate)
+
+const fs = require('fs')
+const path = require('path')
+function createOutputFile(api, log) {
+    if (app.options.simulate)
         log.warn('!!! Simulation !!! No file or dir will be copied or created.');
 
-    log.verbose('create dir: ' + options.dest);
-    if (!options.simulate)
-        fs.existsSync(options.dest) || fs.mkdirSync(options.dest);
+    log.verbose('create dir: ' + app.options.dest);
+    if (!app.options.simulate)
+        fs.existsSync(app.options.dest) || fs.mkdirSync(app.options.dest);
 
     //Write swagger
-    log.verbose('write swagger json file: ' + options.dest + 'swagger.json');
-    if (!options.simulate)
-        fs.writeFileSync(options.dest + './swagger.json', swaggerData);
+    log.verbose('write swagger json file: ' + app.options.dest + 'swagger.json');
+    if (!app.options.simulate)
+        fs.writeFileSync(app.options.dest + './swagger.json', api.swaggerData);
+
 }
 
 exports.main = main

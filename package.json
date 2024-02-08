@@ -1,42 +1,76 @@
 {
-    "name": "apidoc-openapi-3",
-    "version": "1.0.0",
-    "description": "Convert api doc json to openapi 3 json",
-    "author": "amano hikaru",
-    "main": "bin.js",
-    "bin": "bin.js",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/amanoooo/apidoc-swagger-3"
+    "_from": "apidoc-swagger-3@^1.0.6",
+    "_id": "apidoc-swagger-3@1.0.6",
+    "_inBundle": false,
+    "_integrity": "sha512-qHmMLB4uCEy/qSxPzf21RyZnyTNxekfXJ2ShBjuTd+r79ht51vrRhGWMgw51jHT3vMmdcL3jYFsZbGff2vjhag==",
+    "_location": "/apidoc-swagger-3",
+    "_phantomChildren": {
+        "fs-extra": "9.1.0",
+        "glob": "7.1.6",
+        "iconv-lite": "0.6.2",
+        "klaw-sync": "6.0.0",
+        "lodash": "4.17.21",
+        "lru-cache": "6.0.0"
+    },
+    "_requested": {
+        "type": "range",
+        "registry": true,
+        "raw": "apidoc-swagger-3@^1.0.6",
+        "name": "apidoc-swagger-3",
+        "escapedName": "apidoc-swagger-3",
+        "rawSpec": "^1.0.6",
+        "saveSpec": null,
+        "fetchSpec": "^1.0.6"
+    },
+    "_requiredBy": [
+        "#DEV:/",
+        "#USER"
+    ],
+    "_resolved": "https://registry.npmjs.org/apidoc-swagger-3/-/apidoc-swagger-3-1.0.6.tgz",
+    "_shasum": "3bdd7357bdb7debecad33e36b66022bfc36f2c50",
+    "_spec": "apidoc-swagger-3@^1.0.6",
+    "_where": "/var/www",
+    "author": {
+        "name": "amano hikaru"
+    },
+    "bin": {
+        "apidoc-swagger-3": "bin.js"
     },
     "bugs": {
         "url": "https://github.com/amanoooo/apidoc-swagger-3/issues"
     },
-    "keywords": [
-        "api",
-        "apidoc",
-        "doc",
-        "documentation",
-        "swagger",
-        "swagger-3.0",
-        "openapi"
-    ],
-    "scripts": {
-        "test": "jest"
-    },
-    "license": "ISC",
+    "bundleDependencies": false,
     "dependencies": {
-        "apidoc-core": "^0.15.0",
+        "apidoc-core": "^0.12.0",
         "commander": "^6.0.0",
         "generate-schema": "^2.6.0",
         "lodash": "^4.17.20",
         "path-to-regexp": "^6.1.0",
         "winston": "^3.3.3"
     },
+    "deprecated": false,
+    "description": "Convert api doc json to swagger3 json",
+    "homepage": "https://github.com/amanoooo/apidoc-swagger-3#readme",
+    "keywords": [
+        "api",
+        "apidoc",
+        "doc",
+        "documentation",
+        "swagger",
+        "swagger-3.0"
+    ],
+    "license": "ISC",
+    "main": "bin.js",
+    "name": "apidoc-swagger-3",
     "peerDependencies": {
-        "typescript": "^4.9.4"
+        "typescript": "^3.8.7"
     },
-    "devDependencies": {
-        "jest": "^27.5.1"
-    }
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/amanoooo/apidoc-swagger-3.git"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "version": "1.0.6"
 }
